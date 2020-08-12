@@ -25,16 +25,16 @@ module.exports = (app, method, route, processor) => {
 
     let fnMethod = eval("app." + method.toLowerCase());
 
-    fnMethod.call(app, route, (req, res) => {
+    fnMethod.call(app, route, async (req, res) => {
         try {
-            let JSONRet = processor(req.params, req.query, req.body);
+            let JSONRet = await processor(req.params, req.query, req.body);
             res.end(JSON.stringify(JSONRet));
         } catch (e) {
             if(e.code) {
                 res.status(e.code);
                 res.end(e.description);
             } else {
-                res.status(501);
+                res.status(500);
                 res.end(JSON.stringify({error: "Internal Server Error."}));
                 throw e;
             }

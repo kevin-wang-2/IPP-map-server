@@ -6,6 +6,8 @@
   },
   "dependencies": {
     "express": "latest",
-    "body-parser": "latest"
+    "body-parser": "latest",
+    "connect-mongo": "^3.2.0",
+    "mongodb": "latest"
   }
 }

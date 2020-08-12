@@ -1,8 +1,13 @@
 const register = require("./registration");
 
-const test = require("../src/test");
-
 module.exports = (app) => {
     // 在这里写所有注册函数
-    register(app, "get", "/test/:info/:id", test);
+    let zone = require("../src/zone");
+    register(app, "post", "/map/zone", zone.post);
+    register(app, "get", "/map/zone", zone.getall);
+    register(app, "get", "/map/zone/:id", zone.get);
+    register(app, "delete", "/map/zone/:id", zone.deleteid);
+    register(app, "patch", "/map/zone/:id", zone.patch);
+    let routine = require("../src/routine");
+    register(app, "get", "/map/routine", routine.get);
 };
