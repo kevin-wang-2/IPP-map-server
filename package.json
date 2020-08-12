@@ -1,0 +1,11 @@
+{
+  "name": "ippreststructure",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "latest",
+    "body-parser": "latest"
+  }
+}
