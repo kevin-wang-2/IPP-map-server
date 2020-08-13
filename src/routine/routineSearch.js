@@ -213,11 +213,8 @@ async function ASwithPrecision(from, to, precision = 1) {
 
     ///// 距离函数 /////
 
-    const h = (last, p) => {
+    const h = (p) => {
         let res = Math.sqrt(Math.pow((ascendTime * Math.abs(p.h)) , 2) + Math.pow(distance([p.x, p.y], to) , 2));
-        if(last.parent) {
-
-        }
         return res;
     };
 
@@ -227,15 +224,8 @@ async function ASwithPrecision(from, to, precision = 1) {
 
     let fx = from[0], fy = from[1], tx = to[0], ty = to[1];
 
-    const objTo = {
-        x: Math.floor(tx / precision) * precision,
-        y: Math.floor(ty / precision) * precision,
-        h: to.h || 0
-    };
-
     let open = [],
         close = [],
-        result = [],
         resultIndex = -1;
 
     open.push({
@@ -254,7 +244,7 @@ async function ASwithPrecision(from, to, precision = 1) {
             let G = cur.G + g(cur, p);
             if(exists(p, close) !== -1) return;
             if(exists(p, open) === -1) {
-                p.H = h(cur, p);
+                p.H = h(p);
                 p.G = G;
                 p.F = p.H + G;
                 p.parent = cur;
@@ -306,3 +296,28 @@ async function generateRoute(POIs) {
 }
 
 module.exports = generateRoute;
+
+/**
+ * 用于单独进程运行的部分
+ */
+
+if(require.main === module) {
+    const readline = require("readline");
+    const std = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+
+    let cnt = -1, point, POIs = [];
+    std.on("line", (line) => {
+        if(cnt === -1) cnt = parseInt(line);
+        else POIs.push([parseFloat(line.split(" ")[0]), parseFloat(line.split(" ")[1])]);
+        if(POIs.length === cnt) {
+            std.close();
+            generateRoute(POIs).then((data) => {
+                console.log(JSON.stringify(data));
+                process.exit(0);
+            })
+        }
+    });
+}
