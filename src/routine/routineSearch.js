@@ -2,6 +2,8 @@ const mongoClient = require("mongodb").MongoClient;
 const config = require("../../utils/config").readConfigSync();
 const mongoPath = "mongodb://" + config["db"]["user"] + ":" + config["db"]["pwd"] + "@" + config["db"]["ip"] + ":" + config["db"]["port"] + "/" + config["db"]["db"];
 
+let polygons;
+
 /**
  * 判断点是否在多边形内部
  * 算法: 从coordinate出发作X轴的平行射线，与多边形边的交点为奇数
@@ -22,7 +24,7 @@ function contains(polygon, coordinate) {
          */
 
         if (vertex[1] === nextVertex[1]) return; // 高度相等，不计入相交
-        if ((vertex[1] - coordinate[1]) * (nextVertex[1] - coordinate[1]) >= 0) return; // 边端点在线段同侧，交于延长线，不计
+        if ((vertex[1] - coordinate[1]) * (nextVertex[1] - coordinate[1]) >= 0 || (vertex[0] < coordinate[0] && nextVertex[0] < coordinate[0])) return; // 边端点在线段同侧，交于延长线，不计
         let x0 = vertex[0] + (vertex[0] - nextVertex[0]) / (vertex[1] - nextVertex[1]) * (coordinate[1] - vertex[1]);
         if (x0 > coordinate[0]) {
             cnt++;
@@ -30,6 +32,73 @@ function contains(polygon, coordinate) {
     });
 
     return cnt % 2 === 1;
+}
+
+/**
+ * 判断两线段是否相交，若相交返回交点
+ * @param p1
+ * @param p2
+ * @param p3
+ * @param p4
+ */
+function intersects(p1, p2, p3, p4) {
+    /**
+     * 两点式由 y-y1=k(x-x1) (x1 < x < x2)得出
+     * 所以
+     * y-y1=k1(x-x1),y-y3=k2(x-x3)可以解得
+     * y1-y3=k2(x-x3)-k1(x-x1) => x=(y1-y3+k2x3-k1x1)/(k2-k1)
+     * 若x1 < x < x2 && x3 < x < x4则存在交点(x,k1*(x-x1)+y1)，否则不存在
+     */
+
+    let k1 = (p1[1] - p2[1]) / (p1[0] - p2[0]),
+        k2 = (p3[1] - p4[1]) / (p3[0] - p4[0]),
+        x = (p1[1] - p3[1] + k2 * p3[0] - k1 * p1[0]) / (k2 - k1);
+    if(((p1[0] < x && x < p2[0]) || (p1[0] > x && x > p2[0])) && ((p3[0] < x && x < p4[0]) || (p3[0] > x && x > p4[0])))
+        return [x, k1 * (x - p1[0]) + p1[1]];
+    return false;
+}
+
+/**
+ * 判断多边形是否与线段相交
+ * @param polygon
+ * @param p1
+ * @param p2
+ */
+function poly_intersects(polygon, p1, p2) {
+    /**
+     * 遍历多边形的线段
+     */
+    let points = [];
+    for(let i = 0; i < polygon.length; i++) {
+        let p = intersects(polygon[i], polygon[(i + 1) % polygon.length], p1, p2);
+        if(p) points.push(p);
+    }
+    return points || false;
+}
+
+/**
+ * 判断多边形柱体与线段是否相交
+ * @param polygon
+ * @param height
+ * @param p1
+ * @param p2
+ */
+function polycy_intersects(polygon, height, p1, p2) {
+    /**
+     * 线段方向向量由(x1 - x2, y1 - y2, h1 - h2)给出，因此我们有
+     * （x-x1)/m=(y-y1)/n=(h - h1)/p已知x和y，我们可以求出z
+     * h = h1 + p/m * (x-x1) = h1 + (h1 - h2) / (x1 - x2) * (x - x1)
+     */
+
+    for(let i = 0; i < polygon.length; i++) {
+        let p = intersects(polygon[i], polygon[(i + 1) % polygon.length], p1, p2);
+        if(p) {
+            if(height === -1) return true;
+            let h = p1[2] + (p1[2] - p2[2]) / (p1[0] - p2[0]) * (p[0] - p1[0]);
+            if(h < height) return true;
+        }
+    }
+    return false;
 }
 
 /**
@@ -47,33 +116,36 @@ function isValid(p, polygons) {
     return true;
 }
 
+function routeValid(p1, p2, polygons) {
+    for (let i = 0; i < polygons.length; i++) {
+        if (polycy_intersects(polygons[i].vertex, polygons[i].minHeight, [p1.x, p1.y, p1.h], [p2.x, p2.y, p2.h])) {
+            return false;
+        }
+    }
+    return true;
+}
+
 /**
  * 生成一个点的相邻点集
  * @param p
+ * @param polygons
+ * @param precision
  * @returns {Array}
  */
-function generateNeighbours(p, polygons) {
+function generateNeighbours(p, polygons, precision = 1) {
     let neighbours = [];
-    let pp = {
-        x: Math.floor(p.x),
-        y: Math.floor(p.y),
-        h : Math.floor(p.h)
-    };
-    for (let dx = -1; dx <= 1; dx++)
-        for (let dy = -1; dy <= 1; dy++)
+    for (let dx = -precision; dx <= precision; dx+=precision)
+        for (let dy = -precision; dy <= precision; dy+=precision)
             for (let dh = -50; dh <= 50; dh += 50) {
                 if (dx === 0 && dy === 0 && dh === 0) continue;
-                if (pp.h + dh < 0) continue;
-                if (isValid({
-                    x: pp.x + dx,
-                    y: pp.y + dy,
-                    h: pp.h + dh
-                }, polygons)) neighbours.push({
-                    x: pp.x + dx,
-                    y: pp.y + dy,
-                    h: pp.h + dh,
+                if (p.h + dh < 0) continue;
+                let tentative = {
+                    x: p.x + dx,
+                    y: p.y + dy,
+                    h: p.h + dh,
                     G: 0
-                });
+                };
+                if (isValid(tentative, polygons) && routeValid(p, tentative, polygons)) neighbours.push(tentative);
             }
     return neighbours;
 }
@@ -114,17 +186,17 @@ function exists(point, list) {
     return -1;
 }
 
-module.exports = async (from, to) => {
+function estimate(point, list, precision) {
+    for(let i = 0; i < list.length; i++) {
+        if(Math.abs(list[i].x - point[0]) < precision && Math.abs(list[i].y - point[1]) < precision) return i;
+    }
+    return -1;
+}
+
+async function ASwithPrecision(from, to, precision = 1) {
     let routine = [],
         height = [],
         cost = 0;
-
-    // 1. 获取所有多边形
-    let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});
-    let col = db.db(config["db"]["db"]).collection("zone");
-    let polygons = await col.find({type: 0}).toArray();
-
-    // 2. 采用A* 算法
 
     /**
      * 采用A*算法，分辨率为1m，
@@ -136,22 +208,29 @@ module.exports = async (from, to) => {
      *
      */
 
-    const ascendTime = 0.5;
+    const ascendTime = 50;
+    const disturbance = 2;
 
     ///// 距离函数 /////
 
-    const h = (p) => {
-        return Math.max(Math.abs(ascendTime * p.h), distance([p.x, p.y], to));
+    const h = (last, p) => {
+        let res = Math.sqrt(Math.pow((ascendTime * Math.abs(p.h)) , 2) + Math.pow(distance([p.x, p.y], to) , 2));
+        if(last.parent) {
+
+        }
+        return res;
     };
 
     const g = (p, pp) => {
-        return 50 * Math.abs(p.h - pp.h) + distance([p.x, p.y], [pp.x, pp.y]);
+        return Math.sqrt(Math.pow((ascendTime * Math.abs(p.h - pp.h)) , 2) + Math.pow(distance([p.x, p.y], [pp.x, pp.y]) , 2));
     };
 
+    let fx = from[0], fy = from[1], tx = to[0], ty = to[1];
+
     const objTo = {
-        x: Math.floor(to[0]),
-        y: Math.floor(to[1]),
-        h: 0
+        x: Math.floor(tx / precision) * precision,
+        y: Math.floor(ty / precision) * precision,
+        h: to.h || 0
     };
 
     let open = [],
@@ -160,9 +239,9 @@ module.exports = async (from, to) => {
         resultIndex = -1;
 
     open.push({
-        x: from[0],
-        y: from[1],
-        h: 0,
+        x: Math.floor(fx / precision) * precision,
+        y: Math.floor(fy / precision) * precision,
+        h: from.h || 0,
         parent: null,
         G: 0
     });
@@ -170,11 +249,12 @@ module.exports = async (from, to) => {
     do {
         let cur = open.pop();
         close.push(cur);
-        let neighbours = generateNeighbours(cur, polygons);
+        let neighbours = generateNeighbours(cur, polygons, precision);
         neighbours.forEach((p) => {
             let G = cur.G + g(cur, p);
+            if(exists(p, close) !== -1) return;
             if(exists(p, open) === -1) {
-                p.H = h(p);
+                p.H = h(cur, p);
                 p.G = G;
                 p.F = p.H + G;
                 p.parent = cur;
@@ -190,10 +270,11 @@ module.exports = async (from, to) => {
         });
         if(open.length === 0) break;
         open.sort((a, b) => { return b.F - a.F; });
-    } while((resultIndex = exists(objTo, open)) === -1);
+    } while((resultIndex = estimate(to, open, precision)) === -1);
 
     if(resultIndex !== -1)  {
         let cur = open[resultIndex];
+        cost = cur.G;
         do {
             routine.unshift([cur.x, cur.y]);
             height.unshift(cur.h);
@@ -206,4 +287,22 @@ module.exports = async (from, to) => {
         height: height,
         cost: cost
     }
-};
+}
+
+async function generateRoute(POIs) {
+    // 1. 获取所有多边形
+    let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});
+    let col = db.db(config["db"]["db"]).collection("zone");
+    polygons = await col.find({type: 0}).toArray();
+
+    let routine = [], height = [], cost = 0;
+    for(let i = 0; i < POIs.length - 1; i++) {
+        let part = await ASwithPrecision(POIs[i], POIs[i+1], 1);
+        routine = routine.concat(part.routine);
+        height = height.concat(part.height);
+        cost += part.cost;
+    }
+    return {routine, height, cost};
+}
+
+module.exports = generateRoute;
