@@ -53,7 +53,7 @@ function intersects(p1, p2, p3, p4) {
     let k1 = (p1[1] - p2[1]) / (p1[0] - p2[0]),
         k2 = (p3[1] - p4[1]) / (p3[0] - p4[0]),
         x = (p1[1] - p3[1] + k2 * p3[0] - k1 * p1[0]) / (k2 - k1);
-    if(((p1[0] < x && x < p2[0]) || (p1[0] > x && x > p2[0])) && ((p3[0] < x && x < p4[0]) || (p3[0] > x && x > p4[0])))
+    if (((p1[0] < x && x < p2[0]) || (p1[0] > x && x > p2[0])) && ((p3[0] < x && x < p4[0]) || (p3[0] > x && x > p4[0])))
         return [x, k1 * (x - p1[0]) + p1[1]];
     return false;
 }
@@ -69,9 +69,9 @@ function poly_intersects(polygon, p1, p2) {
      * 遍历多边形的线段
      */
     let points = [];
-    for(let i = 0; i < polygon.length; i++) {
+    for (let i = 0; i < polygon.length; i++) {
         let p = intersects(polygon[i], polygon[(i + 1) % polygon.length], p1, p2);
-        if(p) points.push(p);
+        if (p) points.push(p);
     }
     return points || false;
 }
@@ -90,12 +90,12 @@ function polycy_intersects(polygon, height, p1, p2) {
      * h = h1 + p/m * (x-x1) = h1 + (h1 - h2) / (x1 - x2) * (x - x1)
      */
 
-    for(let i = 0; i < polygon.length; i++) {
+    for (let i = 0; i < polygon.length; i++) {
         let p = intersects(polygon[i], polygon[(i + 1) % polygon.length], p1, p2);
-        if(p) {
-            if(height === -1) return true;
+        if (p) {
+            if (height === -1) return true;
             let h = p1[2] + (p1[2] - p2[2]) / (p1[0] - p2[0]) * (p[0] - p1[0]);
-            if(h < height) return true;
+            if (h < height) return true;
         }
     }
     return false;
@@ -134,8 +134,8 @@ function routeValid(p1, p2, polygons) {
  */
 function generateNeighbours(p, polygons, precision = 1) {
     let neighbours = [];
-    for (let dx = -precision; dx <= precision; dx+=precision)
-        for (let dy = -precision; dy <= precision; dy+=precision)
+    for (let dx = -precision; dx <= precision; dx += precision)
+        for (let dy = -precision; dy <= precision; dy += precision)
             for (let dh = -50; dh <= 50; dh += 50) {
                 if (dx === 0 && dy === 0 && dh === 0) continue;
                 if (p.h + dh < 0) continue;
@@ -180,15 +180,15 @@ function distance(p1, p2) {
 }
 
 function exists(point, list) {
-    for(let i = 0; i < list.length; i++) {
-        if(list[i].x === point.x && list[i].y === point.y) return i;
+    for (let i = 0; i < list.length; i++) {
+        if (list[i].x === point.x && list[i].y === point.y) return i;
     }
     return -1;
 }
 
 function estimate(point, list, precision) {
-    for(let i = 0; i < list.length; i++) {
-        if(Math.abs(list[i].x - point[0]) < precision && Math.abs(list[i].y - point[1]) < precision) return i;
+    for (let i = 0; i < list.length; i++) {
+        if (Math.abs(list[i].x - point[0]) < precision && Math.abs(list[i].y - point[1]) < precision) return i;
     }
     return -1;
 }
@@ -214,12 +214,12 @@ async function ASwithPrecision(from, to, precision = 1) {
     ///// 距离函数 /////
 
     const h = (p) => {
-        let res = Math.sqrt(Math.pow((ascendTime * Math.abs(p.h)) , 2) + Math.pow(distance([p.x, p.y], to) , 2));
+        let res = Math.sqrt(Math.pow((ascendTime * Math.abs(p.h)), 2) + Math.pow(distance([p.x, p.y], to), 2));
         return res;
     };
 
     const g = (p, pp) => {
-        return Math.sqrt(Math.pow((ascendTime * Math.abs(p.h - pp.h)) , 2) + Math.pow(distance([p.x, p.y], [pp.x, pp.y]) , 2));
+        return Math.sqrt(Math.pow((ascendTime * Math.abs(p.h - pp.h)), 2) + Math.pow(distance([p.x, p.y], [pp.x, pp.y]), 2));
     };
 
     let fx = from[0], fy = from[1], tx = to[0], ty = to[1];
@@ -242,8 +242,8 @@ async function ASwithPrecision(from, to, precision = 1) {
         let neighbours = generateNeighbours(cur, polygons, precision);
         neighbours.forEach((p) => {
             let G = cur.G + g(cur, p);
-            if(exists(p, close) !== -1) return;
-            if(exists(p, open) === -1) {
+            if (exists(p, close) !== -1) return;
+            if (exists(p, open) === -1) {
                 p.H = h(p);
                 p.G = G;
                 p.F = p.H + G;
@@ -251,25 +251,27 @@ async function ASwithPrecision(from, to, precision = 1) {
                 open.push(p);
             } else {
                 let index = exists(p, open);
-                if(G < open[index].G) {
+                if (G < open[index].G) {
                     open[index].parent = cur;
                     open[index].G = G;
                     open[index].F = G + open[index].H + G;
                 }
             }
         });
-        if(open.length === 0) break;
-        open.sort((a, b) => { return b.F - a.F; });
-    } while((resultIndex = estimate(to, open, precision)) === -1);
+        if (open.length === 0) break;
+        open.sort((a, b) => {
+            return b.F - a.F;
+        });
+    } while ((resultIndex = estimate(to, open, precision)) === -1);
 
-    if(resultIndex !== -1)  {
+    if (resultIndex !== -1) {
         let cur = open[resultIndex];
         cost = cur.G;
         do {
             routine.unshift([cur.x, cur.y]);
             height.unshift(cur.h);
             cur = cur.parent;
-        } while(cur.parent);
+        } while (cur.parent);
     }
 
     return {
@@ -284,10 +286,11 @@ async function generateRoute(POIs) {
     let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});
     let col = db.db(config["db"]["db"]).collection("zone");
     polygons = await col.find({type: 0}).toArray();
+    await db.close();
 
     let routine = [], height = [], cost = 0;
-    for(let i = 0; i < POIs.length - 1; i++) {
-        let part = await ASwithPrecision(POIs[i], POIs[i+1], 1);
+    for (let i = 0; i < POIs.length - 1; i++) {
+        let part = await ASwithPrecision(POIs[i], POIs[i + 1], 1);
         routine = routine.concat(part.routine);
         height = height.concat(part.height);
         cost += part.cost;
@@ -301,23 +304,32 @@ module.exports = generateRoute;
  * 用于单独进程运行的部分
  */
 
-if(require.main === module) {
-    const readline = require("readline");
-    const std = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
+if (require.main === module) {
+    const {ObjectID} = require("mongodb");
 
-    let cnt = -1, point, POIs = [];
-    std.on("line", (line) => {
-        if(cnt === -1) cnt = parseInt(line);
-        else POIs.push([parseFloat(line.split(" ")[0]), parseFloat(line.split(" ")[1])]);
-        if(POIs.length === cnt) {
-            std.close();
-            generateRoute(POIs).then((data) => {
-                console.log(JSON.stringify(data));
-                process.exit(0);
-            })
-        }
+    let cnt = -1, POIs = [], dbid = "";
+    process.on("message", (msg) => {
+        POIs = msg.POIs;
+        dbid = msg.dbid;
+        generateRoute(POIs).then(async (data) => {
+            if (dbid) {
+                let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});
+                let col = db.db(config["db"]["db"]).collection("route");
+                await col.updateOne({_id: ObjectID(dbid)}, {
+                    $set: {
+                        routine: data.routine,
+                        height: data.height,
+                        cost: data.cost,
+                        POI: POIs,
+                        status: "OK",
+                        temporary: true,
+                        create: Date.now()
+                    }
+                });
+                await db.close();
+            } else process.exit(0);
+        }).then(() => {
+            process.exit(0);
+        })
     });
 }
