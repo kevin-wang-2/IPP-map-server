@@ -13,7 +13,7 @@ module.exports = {
                 description: "Invalid Arguments"
             };
 
-            if (body.from.length !== 2 && body.to.length !== 2) throw {
+            if (body.from.length < 2 && body.to.length < 2) throw {
                 code: 400,
                 description: "From and to should be coordinates"
             };
@@ -38,7 +38,7 @@ module.exports = {
                 id
             };
         } else {
-            if (!body.hasOwnProperty("POI") || !body.POI[0] || body.POI[0].length !== 2) throw {
+            if (!body.hasOwnProperty("POI") || !body.POI[0] || body.POI[0].length < 2) throw {
                 code: 400,
                 description: "Invalid Arguments"
             };
@@ -46,7 +46,7 @@ module.exports = {
             let POI = [];
             body.POI.forEach((i) => {
                 POI.push([
-                    Number.parseFloat(i[0]), Number.parseFloat(i[1])
+                    Number.parseFloat(i[0]), Number.parseFloat(i[1]), i[2] ? parseFloat(i[2]) : 0
                 ])
             });
 

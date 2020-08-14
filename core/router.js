@@ -8,7 +8,10 @@ module.exports = (app) => {
     register(app, "get", "/map/zone/:id", zone.get);
     register(app, "delete", "/map/zone/:id", zone.deleteid);
     register(app, "patch", "/map/zone/:id", zone.patch);
+
     let routine = require("../src/routine");
     register(app, "post", "/map/routine", routine.post);
     register(app, "get", "/map/routine/:id", routine.get);
+
+
 };

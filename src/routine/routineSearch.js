@@ -34,6 +34,10 @@ function contains(polygon, coordinate) {
     return cnt % 2 === 1;
 }
 
+function cp(p1, p2, p3) {
+    return (p2[0] - p1[0]) * (p3[1] - p1[1]) + (p2[1] - p1[1]) * (p3[0] - p1[0]);
+}
+
 /**
  * 判断两线段是否相交，若相交返回交点
  * @param p1
@@ -50,12 +54,9 @@ function intersects(p1, p2, p3, p4) {
      * 若x1 < x < x2 && x3 < x < x4则存在交点(x,k1*(x-x1)+y1)，否则不存在
      */
 
-    let k1 = (p1[1] - p2[1]) / (p1[0] - p2[0]),
-        k2 = (p3[1] - p4[1]) / (p3[0] - p4[0]),
-        x = (p1[1] - p3[1] + k2 * p3[0] - k1 * p1[0]) / (k2 - k1);
-    if (((p1[0] < x && x < p2[0]) || (p1[0] > x && x > p2[0])) && ((p3[0] < x && x < p4[0]) || (p3[0] > x && x > p4[0])))
-        return [x, k1 * (x - p1[0]) + p1[1]];
-    return false;
+    return (Math.max(p1[0], p2[0]) >= Math.min(p3[0], p4[0]) && Math.min(p3[0], p4[0]) <= Math.max(p1[0], p2[0]) &&
+        Math.max(p1[1], p2[1]) >= Math.min(p3[1], p4[1]) && Math.min(p3[1], p4[1]) <= Math.max(p1[1], p2[1]) &&
+        cp(p1, p2, p3) * cp(p1, p2, p4) <= 0 && cp(p4, p3, p1) * cp(p4, p3, p2) <= 0);
 }
 
 /**
@@ -181,14 +182,14 @@ function distance(p1, p2) {
 
 function exists(point, list) {
     for (let i = 0; i < list.length; i++) {
-        if (list[i].x === point.x && list[i].y === point.y) return i;
+        if (list[i].x === point.x && list[i].y === point.y && list[i].h === point.h) return i;
     }
     return -1;
 }
 
 function estimate(point, list, precision) {
     for (let i = 0; i < list.length; i++) {
-        if (Math.abs(list[i].x - point[0]) < precision && Math.abs(list[i].y - point[1]) < precision) return i;
+        if (Math.abs(list[i].x - point[0]) < precision && Math.abs(list[i].y - point[1]) < precision && Math.abs(list[i].h - point[2]) < 50) return i;
     }
     return -1;
 }
@@ -208,7 +209,7 @@ async function ASwithPrecision(from, to, precision = 1) {
      *
      */
 
-    const ascendTime = 50;
+    const ascendTime = 1;
     const disturbance = 2;
 
     ///// 距离函数 /////
@@ -231,7 +232,7 @@ async function ASwithPrecision(from, to, precision = 1) {
     open.push({
         x: Math.floor(fx / precision) * precision,
         y: Math.floor(fy / precision) * precision,
-        h: from.h || 0,
+        h: from[2] || 0,
         parent: null,
         G: 0
     });
@@ -319,6 +320,7 @@ if (require.main === module) {
                     $set: {
                         routine: data.routine,
                         height: data.height,
+                        laneHeight: Math.max.apply(null, data.height),
                         cost: data.cost,
                         POI: POIs,
                         status: "OK",
