@@ -254,7 +254,7 @@ async function ASwithPrecision(from, to, precision = 1) {
                 if (G < open[index].G) {
                     open[index].parent = cur;
                     open[index].G = G;
-                    open[index].F = G + open[index].H + G;
+                    open[index].F = G + open[index].H;
                 }
             }
         });
