@@ -1,3 +1,6 @@
+/**
+ * 针对/routine的router，单纯是寻路的触发
+ */
 const {fork} = require("child_process");
 
 const mongoClient = require("mongodb").MongoClient;
@@ -19,7 +22,7 @@ module.exports = {
             };
 
             let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});
-            let col = db.db(config["db"]["db"]).collection("route");
+            let col = db.db(config["db"]["db"]).collection("routine");
             let result = await col.insertOne({
                 status: "pending"
             });
@@ -51,7 +54,7 @@ module.exports = {
             });
 
             let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});
-            let col = db.db(config["db"]["db"]).collection("route");
+            let col = db.db(config["db"]["db"]).collection("routine");
             let result = await col.insertOne({
                 status: "pending"
             });
@@ -77,7 +80,7 @@ module.exports = {
         };
 
         let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});
-        let col = db.db(config["db"]["db"]).collection("route");
+        let col = db.db(config["db"]["db"]).collection("routine");
         let result = (await col.find({_id: ObjectID(params.id)}).toArray())[0];
         await db.close();
 

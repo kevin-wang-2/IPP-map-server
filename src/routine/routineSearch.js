@@ -315,7 +315,7 @@ if (require.main === module) {
         generateRoute(POIs).then(async (data) => {
             if (dbid) {
                 let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});
-                let col = db.db(config["db"]["db"]).collection("route");
+                let col = db.db(config["db"]["db"]).collection("routine");
                 await col.updateOne({_id: ObjectID(dbid)}, {
                     $set: {
                         routine: data.routine,
