@@ -66,9 +66,6 @@ module.exports = {
 
         let changelist = {};
 
-        if(body.hasOwnProperty("coordinate") && body.coordinate[0] && body.coordinate[1])
-            changelist.coordinate = [parseFloat(body.coordinate[0]), parseFloat(body.coordinate[1]), body.coordinate[2] ? parseFloat(body.coordinate[2]) : 0];
-
         if(body.hasOwnProperty("type") && (body.type === "point" || body.type === "terminal"))
             changelist.type = body.type;
 
