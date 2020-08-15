@@ -33,7 +33,7 @@ module.exports = {
         };
 
         let col = db.db(config["db"]["db"]).collection("path");
-        let preResult = await db.find({$and: [{terminal: ObjectID(body.from)}, {terminal: ObjectID(body.to)}]}).count();
+        let preResult = await col.find({$and: [{terminal: ObjectID(body.from)}, {terminal: ObjectID(body.to)}]}).count();
         if(preResult !== 0) throw {
             code: 400,
             description: "Path already exist"
