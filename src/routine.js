@@ -81,6 +81,11 @@ module.exports = {
         let result = (await col.find({_id: ObjectID(params.id)}).toArray())[0];
         await db.close();
 
+        if(!result)  throw {
+            code: 404,
+            description: "No corresponding result"
+        };
+
         return result;
     }
 };

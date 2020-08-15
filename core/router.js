@@ -13,5 +13,10 @@ module.exports = (app) => {
     register(app, "post", "/map/routine", routine.post);
     register(app, "get", "/map/routine/:id", routine.get);
 
-
+    let pinpoint = require("../src/pinpoint");
+    register(app, "post", "/map/pinpoint", pinpoint.post);
+    register(app, "get", "/map/pinpoint", pinpoint.getall);
+    register(app, "get", "/map/pinpoint/:id", pinpoint.get);
+    register(app, "delete", "/map/pinpoint/:id", pinpoint.delete);
+    register(app, "patch", "/map/pinpoint/:id", pinpoint.patch);
 };

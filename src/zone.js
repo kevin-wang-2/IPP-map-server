@@ -74,12 +74,17 @@ module.exports = {
                 }
         }
 
+        await db.close();
+
         return result.result;
     },
     getall: async () => {
         let db = await mongoClient.connect(mongoPath, { useUnifiedTopology: true });
         let col = db.db(config["db"]["db"]).collection("zone");
-        return await col.find({}).toArray();
+        let result = await col.find({}).toArray();
+        await db.close();
+
+        return result;
     },
     get: async (params) => {
         if(!params.id) throw {
@@ -88,7 +93,14 @@ module.exports = {
         };
         let db = await mongoClient.connect(mongoPath, { useUnifiedTopology: true });
         let col = db.db(config["db"]["db"]).collection("zone");
-        return await col.find({_id: ObjectID(params.id)}).toArray();
+        let result = await col.find({_id: ObjectID(params.id)}).toArray();
+        await db.close();
+
+        if(result.length === 0)  throw {
+            code: 404,
+            description: "No corresponding result"
+        };
+        else return result[0];
     },
     deleteid: async (params) => {
         if(!params.id) throw {
@@ -97,7 +109,10 @@ module.exports = {
         };
         let db = await mongoClient.connect(mongoPath, { useUnifiedTopology: true });
         let col = db.db(config["db"]["db"]).collection("zone");
-        return (await col.deleteOne({_id: ObjectID(params.id)})).result;
+        let result = (await col.deleteOne({_id: ObjectID(params.id)})).result;
+        await db.close();
+
+        return result;
     },
     patch: async (params, qs, body) => {
         if(!params.id) throw {
@@ -135,6 +150,7 @@ module.exports = {
                         description: "Invalid Zone Type"
                     }
             }
+            await db.close();
 
             return result.result;
         } else throw {
