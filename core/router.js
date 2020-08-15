@@ -19,4 +19,9 @@ module.exports = (app) => {
     register(app, "get", "/map/pinpoint/:id", pinpoint.get);
     register(app, "delete", "/map/pinpoint/:id", pinpoint.delete);
     register(app, "patch", "/map/pinpoint/:id", pinpoint.patch);
+
+    let path = require("../src/path");
+    register(app, "post", "/map/path", path.post);
+    register(app, "get", "/map/path/:id", path.getallwith);
+    register(app, "get", "/map/path/:id1/:id2", path.getundirected);
 };
