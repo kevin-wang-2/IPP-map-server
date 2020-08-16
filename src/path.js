@@ -73,6 +73,12 @@ module.exports = {
         let result = await col.find({$and: [{terminal: ObjectID(params.id1)}, {terminal: ObjectID(params.id2)}]}).toArray();
 
         await db.close();
+
+        if(result.length === 0)  throw {
+            code: 404,
+            description: "No corresponding result"
+        };
+
         return result[0];
     }
 };
