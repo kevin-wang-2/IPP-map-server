@@ -3,7 +3,7 @@
  */
 const mongoClient = require("mongodb").MongoClient;
 const config = require("../utils/config").readConfigSync();
-const mongoPath = "mongodb://" + config["db"]["user"] + ":" + config["db"]["pwd"] + "@" + config["db"]["ip"] + ":" + config["db"]["port"] + "/" + config["db"]["db"];
+const mongoPath = "mongodb://" + config["db"]["user"] + ":" + config["db"]["pwd"] + "@" + config["db"]["ip"] + ":" + config["db"]["port"] + "/" + config["db"]["db"]["map"];
 const {ObjectID} = require("mongodb");
 
 module.exports = {
@@ -15,7 +15,7 @@ module.exports = {
 
         let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});
 
-        let pinCol = db.db(config["db"]["db"]).collection("pinpoint");
+        let pinCol = db.db(config["db"]["db"]["map"]).collection("pinpoint");
         let fromRec = await pinCol.find({_id: ObjectID(body.from)}).count();
         let toRec = await pinCol.find({_id: ObjectID(body.to)}).count();
         if(fromRec === 0 || toRec === 0) throw {
@@ -23,7 +23,7 @@ module.exports = {
             description: "Points doesn't exist"
         };
 
-        let routeCol = db.db(config["db"]["db"]).collection("routine");
+        let routeCol = db.db(config["db"]["db"]["map"]).collection("routine");
         let updateResult = await routeCol.updateOne({_id: ObjectID(body.routine)}, {
             $set: {temporary: false}
         });
@@ -32,7 +32,7 @@ module.exports = {
             description: "Routine doesn't exist"
         };
 
-        let col = db.db(config["db"]["db"]).collection("path");
+        let col = db.db(config["db"]["db"]["map"]).collection("path");
         let preResult = await col.find({$and: [{terminal: ObjectID(body.from)}, {terminal: ObjectID(body.to)}]}).count();
         if(preResult !== 0) throw {
             code: 400,
@@ -53,7 +53,7 @@ module.exports = {
         };
 
         let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});
-        let col = db.db(config["db"]["db"]).collection("path");
+        let col = db.db(config["db"]["db"]["map"]).collection("path");
         let result = await col.find({terminal: ObjectID(params.id)}).toArray();
 
         await db.close();
@@ -66,7 +66,7 @@ module.exports = {
         };
 
         let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});
-        let col = db.db(config["db"]["db"]).collection("path");
+        let col = db.db(config["db"]["db"]["map"]).collection("path");
         let result = await col.find({$and: [{terminal: ObjectID(params.id1)}, {terminal: ObjectID(params.id2)}]}).toArray();
 
         await db.close();

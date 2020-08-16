@@ -1,7 +1,7 @@
 const mongoClient = require("mongodb").MongoClient;
 const ObjectID = require("mongodb").ObjectID;
 const config = require("../utils/config").readConfigSync();
-const mongoPath = "mongodb://" + config["db"]["user"] + ":" + config["db"]["pwd"] + "@" + config["db"]["ip"] + ":" + config["db"]["port"] + "/" + config["db"]["db"];
+const mongoPath = "mongodb://" + config["db"]["user"] + ":" + config["db"]["pwd"] + "@" + config["db"]["ip"] + ":" + config["db"]["port"] + "/" + config["db"]["db"]["map"];
 
 // TODO: 这里没有鉴权！
 
@@ -36,7 +36,7 @@ module.exports = {
         switch(body["type"]) {
             case "ban":
                 db = await mongoClient.connect(mongoPath, { useUnifiedTopology: true });
-                col = db.db(config["db"]["db"]).collection("zone");
+                col = db.db(config["db"]["db"]["map"]).collection("zone");
                 result = await col.insertOne({
                     type: 0,
                     minHeight: -1,
@@ -51,7 +51,7 @@ module.exports = {
                 };
 
                 db = await mongoClient.connect(mongoPath, { useUnifiedTopology: true });
-                col = db.db(config["db"]["db"]).collection("zone");
+                col = db.db(config["db"]["db"]["map"]).collection("zone");
                 result = await col.insertOne({
                     type: 0,
                     minHeight: Number.parseFloat(body["min-height"]),
@@ -61,7 +61,7 @@ module.exports = {
                 break;
             case "garage":
                 db = await mongoClient.connect(mongoPath, { useUnifiedTopology: true });
-                col = db.db(config["db"]["db"]).collection("zone");
+                col = db.db(config["db"]["db"]["map"]).collection("zone");
                 result = await col.insertOne({
                     type: 1,
                     vertex: numVertex
@@ -80,7 +80,7 @@ module.exports = {
     },
     getall: async () => {
         let db = await mongoClient.connect(mongoPath, { useUnifiedTopology: true });
-        let col = db.db(config["db"]["db"]).collection("zone");
+        let col = db.db(config["db"]["db"]["map"]).collection("zone");
         let result = await col.find({}).toArray();
         await db.close();
 
@@ -92,7 +92,7 @@ module.exports = {
             description: "Invalid Arguments"
         };
         let db = await mongoClient.connect(mongoPath, { useUnifiedTopology: true });
-        let col = db.db(config["db"]["db"]).collection("zone");
+        let col = db.db(config["db"]["db"]["map"]).collection("zone");
         let result = await col.find({_id: ObjectID(params.id)}).toArray();
         await db.close();
 
@@ -108,7 +108,7 @@ module.exports = {
             description: "Invalid Arguments"
         };
         let db = await mongoClient.connect(mongoPath, { useUnifiedTopology: true });
-        let col = db.db(config["db"]["db"]).collection("zone");
+        let col = db.db(config["db"]["db"]["map"]).collection("zone");
         let result = (await col.deleteOne({_id: ObjectID(params.id)})).result;
         await db.close();
 
@@ -126,7 +126,7 @@ module.exports = {
             switch(body.type) {
                 case "ban":
                     db = await mongoClient.connect(mongoPath, { useUnifiedTopology: true });
-                    col = db.db(config["db"]["db"]).collection("zone");
+                    col = db.db(config["db"]["db"]["map"]).collection("zone");
                     result = await col.updateOne({_id: ObjectID(params.id)}, {$set: {type: 0, minHeight: -1}});
                     break;
                 case "restriction":
@@ -136,12 +136,12 @@ module.exports = {
                     };
 
                     db = await mongoClient.connect(mongoPath, { useUnifiedTopology: true });
-                    col = db.db(config["db"]["db"]).collection("zone");
+                    col = db.db(config["db"]["db"]["map"]).collection("zone");
                     result = await col.updateOne({_id: ObjectID(params.id)}, {$set: {type: 0, minHeight:body["min-height"]}});
                     break;
                 case "garage":
                     db = await mongoClient.connect(mongoPath, { useUnifiedTopology: true });
-                    col = db.db(config["db"]["db"]).collection("zone");
+                    col = db.db(config["db"]["db"]["map"]).collection("zone");
                     result = await col.updateOne({_id: ObjectID(params.id)}, {$set: {type: 1}});
                     break;
                 default:

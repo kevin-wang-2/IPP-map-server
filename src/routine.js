@@ -5,7 +5,7 @@ const {fork} = require("child_process");
 
 const mongoClient = require("mongodb").MongoClient;
 const config = require("../utils/config").readConfigSync();
-const mongoPath = "mongodb://" + config["db"]["user"] + ":" + config["db"]["pwd"] + "@" + config["db"]["ip"] + ":" + config["db"]["port"] + "/" + config["db"]["db"];
+const mongoPath = "mongodb://" + config["db"]["user"] + ":" + config["db"]["pwd"] + "@" + config["db"]["ip"] + ":" + config["db"]["port"] + "/" + config["db"]["db"]["map"];
 const {ObjectID} = require("mongodb");
 
 module.exports = {
@@ -22,7 +22,7 @@ module.exports = {
             };
 
             let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});
-            let col = db.db(config["db"]["db"]).collection("routine");
+            let col = db.db(config["db"]["db"]["map"]).collection("routine");
             let result = await col.insertOne({
                 status: "pending"
             });
@@ -54,7 +54,7 @@ module.exports = {
             });
 
             let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});
-            let col = db.db(config["db"]["db"]).collection("routine");
+            let col = db.db(config["db"]["db"]["map"]).collection("routine");
             let result = await col.insertOne({
                 status: "pending"
             });
@@ -80,7 +80,7 @@ module.exports = {
         };
 
         let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});
-        let col = db.db(config["db"]["db"]).collection("routine");
+        let col = db.db(config["db"]["db"]["map"]).collection("routine");
         let result = (await col.find({_id: ObjectID(params.id)}).toArray())[0];
         await db.close();
 

@@ -1,6 +1,6 @@
 const mongoClient = require("mongodb").MongoClient;
 const config = require("../../utils/config").readConfigSync();
-const mongoPath = "mongodb://" + config["db"]["user"] + ":" + config["db"]["pwd"] + "@" + config["db"]["ip"] + ":" + config["db"]["port"] + "/" + config["db"]["db"];
+const mongoPath = "mongodb://" + config["db"]["user"] + ":" + config["db"]["pwd"] + "@" + config["db"]["ip"] + ":" + config["db"]["port"] + "/" + config["db"]["db"]["map"];
 
 let polygons;
 
@@ -285,7 +285,7 @@ async function ASwithPrecision(from, to, precision = 1) {
 async function generateRoute(POIs) {
     // 1. 获取所有多边形
     let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});
-    let col = db.db(config["db"]["db"]).collection("zone");
+    let col = db.db(config["db"]["db"]["map"]).collection("zone");
     polygons = await col.find({type: 0}).toArray();
     await db.close();
 
@@ -315,7 +315,7 @@ if (require.main === module) {
         generateRoute(POIs).then(async (data) => {
             if (dbid) {
                 let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});
-                let col = db.db(config["db"]["db"]).collection("routine");
+                let col = db.db(config["db"]["db"]["map"]).collection("routine");
                 await col.updateOne({_id: ObjectID(dbid)}, {
                     $set: {
                         routine: data.routine,
