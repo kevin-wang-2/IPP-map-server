@@ -47,7 +47,7 @@ module.exports = {
         });
 
         await db.close();
-        return result;
+        return result.result;
     },
     async getallwith(params) {
         if(!params.hasOwnProperty("id")) throw {
