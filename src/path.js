@@ -23,6 +23,7 @@ module.exports = {
             description: "Points doesn't exist"
         };
 
+        let col = db.db(config["db"]["db"]["map"]).collection("path");
         let routeCol = db.db(config["db"]["db"]["map"]).collection("routine");
         let updateResult = await routeCol.updateOne({_id: ObjectID(body.routine)}, {
             $set: {temporary: false}
@@ -32,12 +33,14 @@ module.exports = {
             description: "Routine doesn't exist"
         };
 
-        let col = db.db(config["db"]["db"]["map"]).collection("path");
-        let preResult = await col.find({$and: [{terminal: ObjectID(body.from)}, {terminal: ObjectID(body.to)}]}).count();
-        if(preResult !== 0) throw {
-            code: 400,
-            description: "Path already exist"
-        };
+        let preResult = await col.find({$and: [{terminal: ObjectID(body.from)}, {terminal: ObjectID(body.to)}]}).toArray();
+        if(preResult.length !== 0) {
+            await col.deleteOne({$and: [{terminal: ObjectID(body.from)}, {terminal: ObjectID(body.to)}]});
+            for(let i = 0; i < preResult.length; i++) {
+                await routeCol.deleteOne({_id: preResult[i].routine});
+            }
+        }
+
         let result = await col.insertOne({
             routine: ObjectID(body.routine),
             terminal: [ObjectID(body.from), ObjectID(body.to)],
