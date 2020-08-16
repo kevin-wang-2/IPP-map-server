@@ -6,7 +6,7 @@ const mongoPath = "mongodb://" + config["db"]["user"] + ":" + config["db"]["pwd"
 // TODO: 这里没有鉴权！
 
 module.exports = {
-    post: async (params, qs, body) => {
+    async post(params, qs, body) {
         if(!body.hasOwnProperty("type") || !body.hasOwnProperty("vertex")) {
             throw {
                 code: 400,
@@ -78,7 +78,7 @@ module.exports = {
 
         return result.result;
     },
-    getall: async () => {
+    async getall() {
         let db = await mongoClient.connect(mongoPath, { useUnifiedTopology: true });
         let col = db.db(config["db"]["db"]["map"]).collection("zone");
         let result = await col.find({}).toArray();
@@ -86,7 +86,7 @@ module.exports = {
 
         return result;
     },
-    get: async (params) => {
+    async get(params) {
         if(!params.id) throw {
             code: 400,
             description: "Invalid Arguments"
@@ -102,7 +102,7 @@ module.exports = {
         };
         else return result[0];
     },
-    deleteid: async (params) => {
+    async deleteid(params) {
         if(!params.id) throw {
             code: 400,
             description: "Invalid Arguments"
@@ -114,7 +114,7 @@ module.exports = {
 
         return result;
     },
-    patch: async (params, qs, body) => {
+    async patch(params, qs, body) {
         if(!params.id) throw {
             code: 400,
             description: "Invalid Arguments"

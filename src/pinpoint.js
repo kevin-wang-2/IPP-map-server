@@ -18,7 +18,7 @@ module.exports = {
             ], type: body.type});
         await db.close();
 
-        return result;
+        return result.result;
     },
     async getall() {
         let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});

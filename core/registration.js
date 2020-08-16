@@ -32,7 +32,7 @@ module.exports = (app, method, route, processor) => {
         } catch (e) {
             if(e.code) {
                 res.status(e.code);
-                res.end(e.description);
+                res.end(JSON.stringify({error: e.description}));
             } else {
                 res.status(500);
                 res.end(JSON.stringify({error: "Internal Server Error."}));
