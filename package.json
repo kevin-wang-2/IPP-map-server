@@ -6,6 +6,7 @@
   },
   "dependencies": {
     "express": "latest",
+    "axios": "latest",
     "body-parser": "latest",
     "connect-mongo": "^3.2.0",
     "mongodb": "latest"
