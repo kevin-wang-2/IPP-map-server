@@ -31,10 +31,25 @@ app.use(async (req, res, next) => {
     let arrPath = req.path.split("/");
     if(arrPath[0] === '') arrPath.shift();
     let cpyAuth = authority;
+    let pathRemaining = "";
     for(let i = 0; i < arrPath.length; i++) {
         if(cpyAuth.hasOwnProperty(arrPath[i]))
             cpyAuth = cpyAuth[arrPath[i]];
-        else break;
+        else {
+            pathRemaining = arrPath.slice(i + 1, arrPath.length).join("/");
+            let match = "";
+            for(let index in cpyAuth) {
+                if(!cpyAuth.hasOwnProperty(index)) continue;
+                let reg = (new RegExp(index)).exec(pathRemaining);
+                if(reg && reg.index === 0) {
+                    match = index;
+                    break;
+                }
+            }
+            if(match) {
+                cpyAuth = cpyAuth[match];
+            } else break;
+        }
     }
     if(cpyAuth.hasOwnProperty(req.method.toLowerCase())) {
         let authReq = cpyAuth[req.method.toLowerCase()];
