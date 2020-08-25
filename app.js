@@ -20,7 +20,7 @@ app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Methods", "PUT,PATCH,POST,GET,DELETE,OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "*");
     if(req.path === "/favicon.ico"){
-        res.replSetGetStatus(404);
+        res.sendStatus(404);
     } else {
         next();
     }

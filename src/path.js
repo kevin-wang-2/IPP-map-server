@@ -4,7 +4,7 @@
 const mongoClient = require("mongodb").MongoClient;
 const config = require("../utils/config").readConfigSync();
 const mongoPath = "mongodb://" + config["db"]["user"] + ":" + config["db"]["pwd"] + "@" + config["db"]["ip"] + ":" + config["db"]["port"] + "/" + config["db"]["db"]["map"];
-const {ObjectID} = require("mongodb");
+const {ObjectID, DBRef} = require("mongodb");
 
 module.exports = {
     async post(params, qs, body) {
@@ -42,8 +42,8 @@ module.exports = {
         }
 
         let result = await col.insertOne({
-            routine: ObjectID(body.routine),
-            terminal: [ObjectID(body.from), ObjectID(body.to)],
+            routine: DBRef("routine", ObjectID(body.routine)),
+            terminal: [DBRef("pinpoint", ObjectID(body.from)), DBRef("pinpoint", ObjectID(body.to))],
         });
 
         await db.close();
@@ -57,7 +57,7 @@ module.exports = {
 
         let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});
         let col = db.db(config["db"]["db"]["map"]).collection("path");
-        let result = await col.find({terminal: ObjectID(params.id)}).toArray();
+        let result = await col.find({"terminal.$id": ObjectID(params.id)}).toArray();
 
         await db.close();
         return result;
@@ -70,7 +70,7 @@ module.exports = {
 
         let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});
         let col = db.db(config["db"]["db"]["map"]).collection("path");
-        let result = await col.find({$and: [{terminal: ObjectID(params.id1)}, {terminal: ObjectID(params.id2)}]}).toArray();
+        let result = await col.find({$and: [{"terminal.$id": ObjectID(params.id1)}, {"terminal.$id": ObjectID(params.id2)}]}).toArray();
 
         await db.close();
 
