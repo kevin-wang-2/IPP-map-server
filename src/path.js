@@ -23,6 +23,8 @@ module.exports = {
             description: "Points doesn't exist"
         };
 
+        await pinCol.updateMany({$or: [{_id: ObjectID(body.from)}, {_id: ObjectID(body.to)}], new: true}, {$set: {new: false}});
+
         let col = db.db(config["db"]["db"]["map"]).collection("path");
         let routeCol = db.db(config["db"]["db"]["map"]).collection("routine");
         let updateResult = await routeCol.updateOne({_id: ObjectID(body.routine)}, {
