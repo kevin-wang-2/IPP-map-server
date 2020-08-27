@@ -57,10 +57,10 @@ module.exports = {
 
         let pathCol = db.db(config["db"]["db"]["map"]).collection("path");
         let routineCol = db.db(config["db"]["db"]["map"]).collection("routine");
-        let pathRec = await pathCol.find({terminal: ObjectID(params.id)}).toArray();
+        let pathRec = await pathCol.find({"terminal.$id": ObjectID(params.id)}).toArray();
         for(let i = 0; i < pathRec.length; i++)
-            await routineCol.deleteOne({_id: pathRec[i].routine});
-        await pathCol.deleteMany({terminal: ObjectID(params.id)});
+            await routineCol.deleteOne({_id: pathRec[i].routine.$id});
+        await pathCol.deleteMany({"terminal.$id": ObjectID(params.id)});
 
         await db.close();
 
