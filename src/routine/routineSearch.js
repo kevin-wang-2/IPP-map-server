@@ -1,6 +1,7 @@
 const mongoClient = require("mongodb").MongoClient;
 const config = require("../../utils/config").readConfigSync();
 const mongoPath = "mongodb://" + config["db"]["user"] + ":" + config["db"]["pwd"] + "@" + config["db"]["ip"] + ":" + config["db"]["port"] + "/" + config["db"]["db"]["map"];
+const {BigInteger} = require("jsbn")
 
 let polygons;
 
@@ -45,7 +46,7 @@ function cp(p1, p2, p3) {
  * @param p3
  * @param p4
  */
-function intersects(p1, p2, p3, p4) {
+function intersects([x1, y1], [x2, y2], [x3, y3], [x4, y4]) {
     /**
      * 两点式由 y-y1=k(x-x1) (x1 < x < x2)得出
      * 所以
@@ -53,10 +54,25 @@ function intersects(p1, p2, p3, p4) {
      * y1-y3=k2(x-x3)-k1(x-x1) => x=(y1-y3+k2x3-k1x1)/(k2-k1)
      * 若x1 < x < x2 && x3 < x < x4则存在交点(x,k1*(x-x1)+y1)，否则不存在
      */
+    if((y1 - y2) * (x4 - x3) === (y3 - y4) * (x2 - x1)) {
+        return x2*(y1 - y2) - y2*(x1 - x2) === x4*(y3 - y4) - y4*(x3 - x4) &&
+               [Math.max(Math.min(x1, x2), Math.min(x3, x4)), ((x1 < x2) ? Math.min : Math.max)((x1 < x2) ? y1 : y2, (x3 < x4) ? y3 : y4)]
+    }
 
-    return (Math.max(p1[0], p2[0]) >= Math.min(p3[0], p4[0]) && Math.min(p3[0], p4[0]) <= Math.max(p1[0], p2[0]) &&
-        Math.max(p1[1], p2[1]) >= Math.min(p3[1], p4[1]) && Math.min(p3[1], p4[1]) <= Math.max(p1[1], p2[1]) &&
-        cp(p1, p2, p3) * cp(p1, p2, p4) <= 0 && cp(p4, p3, p1) * cp(p4, p3, p2) <= 0);
+    let x0, y0;
+    /**
+     * 这里由于javascript运算的锅，在正数运算时会被自动取整，导致40m级别的误差，不要自动重构！
+     */
+    if(x1 > x3) {
+        x0 = (x1 * x3 * y2 - x2 * x3 * y1 - x1 * x4 * y2 + x2 * x4 * y1 - x1 * x3 * y4 + x1 * x4 * y3 + x2 * x3 * y4 - x2 * x4 * y3) / (x1 * y3 - x3 * y1 - x1 * y4 - x2 * y3 + x3 * y2 + x4 * y1 + x2 * y4 - x4 * y2);
+        y0 = (x1 * y2 * y3 - x2 * y1 * y3 - x1 * y2 * y4 + x2 * y1 * y4 - x3 * y1 * y4 + x4 * y1 * y3 + x3 * y2 * y4 - x4 * y2 * y3) / (x1 * y3 - x3 * y1 - x1 * y4 - x2 * y3 + x3 * y2 + x4 * y1 + x2 * y4 - x4 * y2);
+    } else {
+        x0 = (x3 * x1 * y4 - x4 * x1 * y3 - x3 * x2 * y4 + x4 * x2 * y3 - x3 * x1 * y2 + x3 * x2 * y1 + x4 * x1 * y2 - x4 * x2 * y1) / (x3 * y1 - x1 * y3 - x3 * y2 - x4 * y1 + x1 * y4 + x2 * y3 + x4 * y2 - x2 * y4);
+        y0 = (x3 * y4 * y1 - x4 * y3 * y1 - x3 * y4 * y2 + x4 * y3 * y2 - x1 * y3 * y2 + x2 * y3 * y1 + x1 * y4 * y2 - x2 * y4 * y1) / (x3 * y1 - x1 * y3 - x3 * y2 - x4 * y1 + x1 * y4 + x2 * y3 + x4 * y2 - x2 * y4);
+
+    }
+    return Math.min(x1, x2) <= x0 && x0 <= Math.max(x1, x2) &&
+        [x0, y0];
 }
 
 /**
@@ -93,6 +109,7 @@ function polycy_intersects(polygon, height, p1, p2) {
 
     for (let i = 0; i < polygon.length; i++) {
         let p = intersects(polygon[i], polygon[(i + 1) % polygon.length], p1, p2);
+        p && console.log(p);
         if (p) {
             if (height === -1) return true;
             let h = p1[2] + (p1[2] - p2[2]) / (p1[0] - p2[0]) * (p[0] - p1[0]);
@@ -282,6 +299,22 @@ async function ASwithPrecision(from, to, precision = 1) {
     }
 }
 
+function optimizeRoutine(POI, height) {
+    let routineTable = new Array(POI.length).fill([]);
+    let weights = new Array(POI.length).fill(0);
+    for (let i = 0; i < POI.length; i++) {
+        for (let j = i + 1; j < POI.length; j++) {
+            let dist = distance(POI[i].concat([height[i]]), POI[j].concat([height[j]]));
+            if (routeValid(POI[i].concat([height[i]]), POI[j].concat([height[j]]), polygons) && (weights[j] === 0 || weights[j] >= (weights[i] + dist))) {
+                weights[j] = weights[i] + dist;
+                routineTable[j] = routineTable[i].concat([i]);
+            }
+        }
+    }
+
+    return routineTable[POI.length - 1].concat([POI.length - 1]);
+}
+
 async function generateRoute(POIs) {
     // 1. 获取所有多边形
     let db = await mongoClient.connect(mongoPath, {useUnifiedTopology: true});
@@ -292,8 +325,14 @@ async function generateRoute(POIs) {
     let routine = [], height = [], cost = 0;
     for (let i = 0; i < POIs.length - 1; i++) {
         let part = await ASwithPrecision(POIs[i], POIs[i + 1], 1);
-        routine = routine.concat(part.routine);
-        height = height.concat(part.height);
+        console.log("---");
+        let optRoutine = optimizeRoutine(part.routine, part.height);
+        routine = [];
+        height = [];
+        for (let i = 0; i < optRoutine.length; i++) {
+            routine.push(part.routine[optRoutine[i]]);
+            height.push(part.height[optRoutine[i]]);
+        }
         cost += part.cost;
     }
     return {routine, height, cost};
