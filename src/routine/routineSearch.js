@@ -1,7 +1,8 @@
 const mongoClient = require("mongodb").MongoClient;
 const config = require("../../utils/config").readConfigSync();
 const mongoPath = "mongodb://" + config["db"]["user"] + ":" + config["db"]["pwd"] + "@" + config["db"]["ip"] + ":" + config["db"]["port"] + "/" + config["db"]["db"]["map"];
-const {BigInteger} = require("jsbn")
+
+const SJTUCenter =  [13519023.565173406, 3636438.266781322];
 
 let polygons;
 
@@ -35,10 +36,6 @@ function contains(polygon, coordinate) {
     return cnt % 2 === 1;
 }
 
-function cp(p1, p2, p3) {
-    return (p2[0] - p1[0]) * (p3[1] - p1[1]) + (p2[1] - p1[1]) * (p3[0] - p1[0]);
-}
-
 /**
  * 判断两线段是否相交，若相交返回交点
  * @param p1
@@ -54,25 +51,28 @@ function intersects([x1, y1], [x2, y2], [x3, y3], [x4, y4]) {
      * y1-y3=k2(x-x3)-k1(x-x1) => x=(y1-y3+k2x3-k1x1)/(k2-k1)
      * 若x1 < x < x2 && x3 < x < x4则存在交点(x,k1*(x-x1)+y1)，否则不存在
      */
+
+    x1 -= SJTUCenter[0];
+    y1 -= SJTUCenter[1];
+    x2 -= SJTUCenter[0];
+    y2 -= SJTUCenter[1];
+    x3 -= SJTUCenter[0];
+    y3 -= SJTUCenter[1];
+    x4 -= SJTUCenter[0];
+    y4 -= SJTUCenter[1];
+
     if((y1 - y2) * (x4 - x3) === (y3 - y4) * (x2 - x1)) {
         return x2*(y1 - y2) - y2*(x1 - x2) === x4*(y3 - y4) - y4*(x3 - x4) &&
-               [Math.max(Math.min(x1, x2), Math.min(x3, x4)), ((x1 < x2) ? Math.min : Math.max)((x1 < x2) ? y1 : y2, (x3 < x4) ? y3 : y4)]
+               [Math.max(Math.min(x1, x2), Math.min(x3, x4)) + SJTUCenter[0], ((x1 < x2) ? Math.min : Math.max)((x1 < x2) ? y1 : y2, (x3 < x4) ? y3 : y4) + SJTUCenter[0]]
     }
 
     let x0, y0;
-    /**
-     * 这里由于javascript运算的锅，在正数运算时会被自动取整，导致40m级别的误差，不要自动重构！
-     */
-    if(x1 > x3) {
-        x0 = (x1 * x3 * y2 - x2 * x3 * y1 - x1 * x4 * y2 + x2 * x4 * y1 - x1 * x3 * y4 + x1 * x4 * y3 + x2 * x3 * y4 - x2 * x4 * y3) / (x1 * y3 - x3 * y1 - x1 * y4 - x2 * y3 + x3 * y2 + x4 * y1 + x2 * y4 - x4 * y2);
-        y0 = (x1 * y2 * y3 - x2 * y1 * y3 - x1 * y2 * y4 + x2 * y1 * y4 - x3 * y1 * y4 + x4 * y1 * y3 + x3 * y2 * y4 - x4 * y2 * y3) / (x1 * y3 - x3 * y1 - x1 * y4 - x2 * y3 + x3 * y2 + x4 * y1 + x2 * y4 - x4 * y2);
-    } else {
-        x0 = (x3 * x1 * y4 - x4 * x1 * y3 - x3 * x2 * y4 + x4 * x2 * y3 - x3 * x1 * y2 + x3 * x2 * y1 + x4 * x1 * y2 - x4 * x2 * y1) / (x3 * y1 - x1 * y3 - x3 * y2 - x4 * y1 + x1 * y4 + x2 * y3 + x4 * y2 - x2 * y4);
-        y0 = (x3 * y4 * y1 - x4 * y3 * y1 - x3 * y4 * y2 + x4 * y3 * y2 - x1 * y3 * y2 + x2 * y3 * y1 + x1 * y4 * y2 - x2 * y4 * y1) / (x3 * y1 - x1 * y3 - x3 * y2 - x4 * y1 + x1 * y4 + x2 * y3 + x4 * y2 - x2 * y4);
+    x0 = (x1 * x3 * y2 - x2 * x3 * y1 - x1 * x4 * y2 + x2 * x4 * y1 - x1 * x3 * y4 + x1 * x4 * y3 + x2 * x3 * y4 - x2 * x4 * y3) / (x1 * y3 - x3 * y1 - x1 * y4 - x2 * y3 + x3 * y2 + x4 * y1 + x2 * y4 - x4 * y2);
+    y0 = (x1 * y2 * y3 - x2 * y1 * y3 - x1 * y2 * y4 + x2 * y1 * y4 - x3 * y1 * y4 + x4 * y1 * y3 + x3 * y2 * y4 - x4 * y2 * y3) / (x1 * y3 - x3 * y1 - x1 * y4 - x2 * y3 + x3 * y2 + x4 * y1 + x2 * y4 - x4 * y2);
 
-    }
-    return Math.min(x1, x2) <= x0 && x0 <= Math.max(x1, x2) &&
-        [x0, y0];
+    return ((Math.min(x1, x2) <= x0 && x0 <= Math.max(x1, x2)) || (Math.min(y1, y2) <= y0 && y0 <= Math.max(y1, y2))) &&
+        ((Math.min(x3, x4) <= x0 && x0 <= Math.max(x3, x4)) || (Math.min(y3, y4) <= y0 && y0 <= Math.max(y3, y4))) &&
+        [x0 + SJTUCenter[0], y0 + SJTUCenter[1]];
 }
 
 /**
@@ -104,15 +104,14 @@ function polycy_intersects(polygon, height, p1, p2) {
     /**
      * 线段方向向量由(x1 - x2, y1 - y2, h1 - h2)给出，因此我们有
      * （x-x1)/m=(y-y1)/n=(h - h1)/p已知x和y，我们可以求出z
-     * h = h1 + p/m * (x-x1) = h1 + (h1 - h2) / (x1 - x2) * (x - x1)
+     * h = h1 + p/m * (x-x1) = h1 + (h1 - h2) / l * l'
      */
 
     for (let i = 0; i < polygon.length; i++) {
         let p = intersects(polygon[i], polygon[(i + 1) % polygon.length], p1, p2);
-        p && console.log(p);
         if (p) {
             if (height === -1) return true;
-            let h = p1[2] + (p1[2] - p2[2]) / (p1[0] - p2[0]) * (p[0] - p1[0]);
+            let h = p2[2] + (p1[2] - p2[2]) / Math.sqrt(Math.pow(p1[0] - p2[0], 2) + Math.pow(p1[1] - p2[1], 2)) * Math.sqrt(Math.pow(p[0] - p2[0], 2) + Math.pow(p[1] - p2[1], 2));
             if (h < height) return true;
         }
     }
@@ -136,7 +135,7 @@ function isValid(p, polygons) {
 
 function routeValid(p1, p2, polygons) {
     for (let i = 0; i < polygons.length; i++) {
-        if (polycy_intersects(polygons[i].vertex, polygons[i].minHeight, [p1.x, p1.y, p1.h], [p2.x, p2.y, p2.h])) {
+        if (polycy_intersects(polygons[i].vertex, polygons[i].minHeight, [p1.x || p1[0], p1.y || p1[1], p1.h || p1[2]], [p2.x || p2[0], p2.y || p2[1], p2.h || p2[2]])) {
             return false;
         }
     }
@@ -304,8 +303,9 @@ function optimizeRoutine(POI, height) {
     let weights = new Array(POI.length).fill(0);
     for (let i = 0; i < POI.length; i++) {
         for (let j = i + 1; j < POI.length; j++) {
-            let dist = distance(POI[i].concat([height[i]]), POI[j].concat([height[j]]));
-            if (routeValid(POI[i].concat([height[i]]), POI[j].concat([height[j]]), polygons) && (weights[j] === 0 || weights[j] >= (weights[i] + dist))) {
+            let dist = Math.sqrt(Math.pow(POI[i].concat([height[i]]), 2) + Math.pow(POI[j].concat([height[j]]), 2));
+            if (routeValid(POI[i].concat([height[i]]), POI[j].concat([height[j]]), polygons) &&
+                (weights[j] === 0 || weights[j] > (weights[i] + dist) || (weights[j] === (weights[i] + dist) && routineTable[i].length + 1 < routineTable[j].length))) {
                 weights[j] = weights[i] + dist;
                 routineTable[j] = routineTable[i].concat([i]);
             }
@@ -325,10 +325,7 @@ async function generateRoute(POIs) {
     let routine = [], height = [], cost = 0;
     for (let i = 0; i < POIs.length - 1; i++) {
         let part = await ASwithPrecision(POIs[i], POIs[i + 1], 1);
-        console.log("---");
         let optRoutine = optimizeRoutine(part.routine, part.height);
-        routine = [];
-        height = [];
         for (let i = 0; i < optRoutine.length; i++) {
             routine.push(part.routine[optRoutine[i]]);
             height.push(part.height[optRoutine[i]]);
